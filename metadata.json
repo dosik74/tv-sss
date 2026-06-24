@@ -1,0 +1,6 @@
+{
+  "name": "Anime Cinema TV",
+  "description": "An ad-free streaming web application designed for Google TV, featuring complete D-pad spatial navigation and Firebase user data synchronization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
