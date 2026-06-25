@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import {
   Tv,
   Heart,
@@ -40,6 +41,8 @@ import { useTVNavigation, TVZone } from './hooks/useTVNavigation';
 import { Anime, ANIMES_MOCK_DATA } from './mockData';
 import { AnimeCard } from './components/AnimeCard';
 import { checkBackendHealth, fetchCatalog, fetchEmbedUrl, fetchTranslationOptions, KodikTranslationOption, fetchEpisodes } from './api/kodik';
+import SearchPage from './pages/SearchPage';
+import DetailPage from './pages/DetailPage';
 
 function isMultiEpisode(anime: Anime): boolean {
   return anime.type === 'series' || (anime.episodesTotal != null && anime.episodesTotal > 1);
@@ -72,7 +75,10 @@ interface UserProfileData {
   }>;
 }
 
-export default function App() {
+// Компонент главной страницы с существующим функционалом
+function HomePage() {
+  const navigate = useNavigate();
+  
   // Список аниме (эмуляция Shikimori API)
   const [animes, setAnimes] = useState<Anime[]>([]);
   const [featuredAnime, setFeaturedAnime] = useState<Anime | null>(null);
@@ -116,17 +122,22 @@ export default function App() {
   // Всплывающие уведомления (Toast)
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Ref для таймера автоскрытия HUD плеера
+  const hudTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Вкладки Sidebar меню:
   // 0 - Аниме
   // 1 - Фильмы
   // 2 - Сериалы
-  // 3 - Избранное (Мой Список)
-  // 4 - История просмотров
-  // 5 - Личный кабинет / Настройки
+  // 3 - Поиск (TMDB全局搜索)
+  // 4 - Избранное (Мой Список)
+  // 5 - История просмотров
+  // 6 - Личный кабинет / Настройки
   const sidebarItems = [
     { label: 'Аниме', icon: Tv, id: 'anime' },
     { label: 'Фильмы', icon: Film, id: 'movie' },
     { label: 'Сериалы', icon: MonitorPlay, id: 'series' },
+    { label: 'Поиск', icon: Search, id: 'search' },
     { label: 'Избранное', icon: Heart, id: 'favorites' },
     { label: 'История', icon: HistoryIcon, id: 'history' },
     { label: 'Аккаунт', icon: User, id: 'account' },
@@ -756,7 +767,11 @@ export default function App() {
                 ref={(el) => tvNav.registerRef('sidebar', index, el)}
                 onClick={() => {
                   tvNav.setActiveItem('sidebar', index);
-                  tvNav.setActiveZone('grid');
+                  if (item.id === 'search') {
+                    navigate('/search');
+                  } else {
+                    tvNav.setActiveZone('grid');
+                  }
                 }}
                 onMouseEnter={() => tvNav.setActiveItem('sidebar', index)}
                 className={`w-full flex items-center gap-4 py-3.5 px-3.5 rounded-xl transition-all duration-300 pointer-events-auto text-left outline-none ${
@@ -1540,5 +1555,20 @@ export default function App() {
       </AnimatePresence>
 
     </div>
+  );
+}
+
+// Главный компонент с роутингом
+export default function App() {
+  const location = useLocation();
+  const isMainPage = location.pathname === '/' || location.pathname === '';
+
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/search" element={<SearchPage />} />
+      <Route path="/detail/:type/:id" element={<DetailPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }

@@ -13,92 +13,27 @@ export async function checkBackendHealth(): Promise<boolean> {
   }
 }
 
-export async function fetchCatalog(kind: 'all' | 'anime' | 'movies' | 'serials', limit = 30) {
-  const res = await fetch(`${getApiBase()}/list?kind=${kind}&limit=${limit}`, {
-    signal: AbortSignal.timeout(120000),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`Каталог Kodik: ${res.status} ${detail}`);
-  }
-  const body = await res.json();
-  return Array.isArray(body.results) ? body.results : [];
-}
-
-export interface KodikTranslationOption {
-  id: string;
-  type: string;
-  name: string;
-  series_range?: [number, number];
-}
-
-export async function fetchTranslationOptions(params: { id: string; idType: string; }) {
-  const query = new URLSearchParams({
-    id: params.id,
-    id_type: params.idType,
-  });
-  const res = await fetch(`${getApiBase()}/translations?${query}`, {
-    signal: AbortSignal.timeout(90000),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`Список озвучек Kodik: ${res.status} ${detail}`);
-  }
-  const body = await res.json();
-  return Array.isArray(body.translations) ? body.translations as KodikTranslationOption[] : [];
-}
-
-export async function fetchPlayUrl(params: {
-  id: string;
-  idType: string;
-  seriaNum: number;
-  translationId?: string;
-  quality?: number;
+export async function searchAlloha(params: {
+  imdbId?: string;
+  mediaType: 'movie' | 'tv';
+  season?: number;
+  episode?: number;
 }) {
   const query = new URLSearchParams({
-    id: params.id,
-    id_type: params.idType,
-    seria_num: String(params.seriaNum),
-    translation_id: params.translationId || '0',
-    quality: String(params.quality || 720),
+    media_type: params.mediaType,
+    season: String(params.season || 1),
+    episode: String(params.episode || 1),
   });
-  const res = await fetch(`${getApiBase()}/play?${query}`, {
-    signal: AbortSignal.timeout(90000),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`Плеер Kodik: ${res.status} ${detail}`);
+  if (params.imdbId) {
+    query.append('imdb_id', params.imdbId);
   }
-  return res.json() as Promise<{ m3u8_url?: string }>;
-}
-
-export async function fetchEmbedUrl(params: { id: string; idType: string }) {
-  const query = new URLSearchParams({
-    id: params.id,
-    id_type: params.idType,
-  });
-  const res = await fetch(`${getApiBase()}/embed?${query}`, {
-    signal: AbortSignal.timeout(90000),
+  const res = await fetch(`${getApiBase()}/search_alloha?${query}`, {
+    signal: AbortSignal.timeout(30000),
   });
   if (!res.ok) {
     const detail = await res.text();
-    throw new Error(`Embed Kodik: ${res.status} ${detail}`);
-  }
-  return res.json() as Promise<{ embed_url?: string }>;
-}
-
-export async function fetchEpisodes(params: { id: string; idType: string }) {
-  const query = new URLSearchParams({
-    id: params.id,
-    id_type: params.idType,
-  });
-  const res = await fetch(`${getApiBase()}/episodes?${query}`, {
-    signal: AbortSignal.timeout(90000),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`Список серий Kodik: ${res.status} ${detail}`);
+    throw new Error(`Поиск в Alloha: ${res.status} ${detail}`);
   }
   const body = await res.json();
-  return Array.isArray(body.episodes) ? body.episodes : [];
+  return body;
 }
